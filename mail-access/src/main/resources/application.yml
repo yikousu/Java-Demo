@@ -1,0 +1,28 @@
+server:
+  port: 8001
+
+spring:
+  mail:
+    host: smtp.163.com # 网易的邮件服务器主机地址
+    username: hac1322@163.com # 登录邮件服务器的邮箱【自己的邮箱】
+    password: DVGDFEXEQPTPBHOJ # 授权码
+    port: 465
+    smtp:
+      auth: true # 是否需要身份验证
+      starttls.enabled: true # 是否启用 STARTTLS 支持
+    default-encoding: utf-8 # 默认邮件编码为 UTF-8
+    protocol: smtps
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/mail_access?useUnicode=true&characterEncoding=utf8&autoReconnect=true&allowMultiQueries=true&useSSL=false
+    username: root
+    password: root
+
+jedis-redis:
+  host: 127.0.0.1
+  port: 6379
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.example.hac.pojo

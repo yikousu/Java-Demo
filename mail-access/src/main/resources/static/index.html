@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="./mail/css/styles.css">
+
+</head>
+<body>
+<div class="container" id="login">
+    <h2>Login to open up a new world</h2>
+    <input type="email" placeholder="Email" v-model="email" required pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$">
+    <input type="password" placeholder="Password" v-model="password" required pattern=".{6,20}">
+
+    <button @click="login">Login</button>
+    <p>Don't have an account? <a href="register.html">Register</a></p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="./mail/js/login.js">
+
+</script>
+</body>
+</html>

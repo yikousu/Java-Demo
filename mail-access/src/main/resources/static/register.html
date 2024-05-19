@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register</title>
+  <link rel="stylesheet" href="./mail/css/styles.css">
+
+</head>
+
+<body>
+<div class="container" id="registry">
+  <h2 style="font-style: italic">Register</h2>
+  <input type="email" placeholder="Email" v-model="email" required>
+  <input type="text" placeholder="Verification Code" v-model="verificationCode" required>
+
+  <br>
+  <input type="password" placeholder="Password" v-model="password" required>
+  <br>
+  <button @click="sendCode" :disabled="isSendingCode">SendCode</button>  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+  <button @click="register">Register</button>
+  <p>Already have an account? <a href="index.html">Login</a></p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="./mail/js/registry.js">
+</script>
+
+</body>
+
+</html>
