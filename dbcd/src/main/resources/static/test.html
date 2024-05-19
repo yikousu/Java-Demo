@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--将 Vue.js 库引入到你的 HTML 页面中-->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <!--引入这个库 可以快速发送请求-->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<!--第三步-->
+<div id="app">
+    <button type="button" @click="fun">click</button>
+    <div>{{res}}</div>
+</div>
+</body>
+
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            res: ''
+        },
+        methods: {
+            //测试数据交互 不用表单
+            fun() {
+                // 第二个参数表示请求体  是JSON格式的
+                axios.get('/test', {
+                    params: {
+                        name: '张三',
+                        age: 18
+                    }
+                })
+                    .then(res => {
+                        this.res = res.data;
+                    })
+                    .catch(error => {
+                        console.log(error)
+                    })
+            }
+
+        }
+    });
+</script>
+</html>

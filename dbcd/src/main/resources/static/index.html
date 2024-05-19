@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>管理页面</title>
+    <link rel="stylesheet" type="text/css" href="./css/index.css">
+
+</head>
+
+<body>
+<header>
+    <h1>管理页面</h1>
+</header>
+
+<nav>
+    <ul>
+        <li><a href="html/drugs.html">药品管理</a></li>
+        <li><a href="html/employee.html">员工管理</a></li>
+        <li><a href="html/customerinformation.html">客户信息管理</a></li>
+        <li><a href="html/incominginformation.html">进货信息管理</a></li>
+        <li><a href="html/outgoinginformation.html">出库信息管理</a></li>
+    </ul>
+</nav>
+
+<script>
+    const links = document.querySelectorAll('nav a');
+    links.forEach(link => {
+        link.addEventListener('mouseover', () => {
+            //鼠标在按钮上悬浮时候按钮颜色
+            link.style.backgroundColor = '#CDC9C9';
+            link.style.color = '#fff';
+        });
+        link.addEventListener('mouseout', () => {
+            link.style.backgroundColor = '#4CAF50';
+            link.style.color = '#fff';
+        });
+    });
+</script>
+</body>
+
+</html>

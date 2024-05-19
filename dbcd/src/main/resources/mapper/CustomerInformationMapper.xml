@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yikousu.mapper.CustomerInformationMapper"><!--  写对应mapper的路径-->
+
+    <!--
+    自己写mapper.xml文件
+        1. 可以写更复杂的查询语句
+        2. 可以写动态sql语句
+        3. 最好不用注解写sql语句 可能会有意想不到的结果出现
+
+    id:mapper中对应的方法名字
+    resultType:数据库查询结果封装到那个pojo?  写其相对路径
+
+    <select>标签中写查询sql语句
+    -->
+    <select id="searchCount" resultType="int">
+        select count(*) from customerinformation
+    </select>
+
+
+</mapper>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>药品进销存系统</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- css文件 -->
+    <link rel="stylesheet" type="text/css" href="../css/1.css">
+
+</head>
+<body>
+<div id="app">
+    <h1>药品进销存系统</h1>
+    <button @click="getDrugInfo">查询药品信息</button>
+    <button @click="showAddForm">增加药品信息</button>
+
+    <!--  因为vue双向绑定的  如果 this.drugs.data 发生变化 页面上与这个数据绑定的部分也会被更新，显示新的数据内容。-->
+    <input type="text" v-model="searchDrugName" placeholder="根据药品名称查询">
+    <button @click="searchDrug">查询</button>
+
+    <h2>药品信息</h2>
+    <table>
+        <tr>
+            <th>药品编号</th>
+            <th>药品名称</th>
+            <th>生产厂家</th>
+            <th>保质期</th>
+            <th>药品用途</th>
+            <th>药品价格</th>
+            <th>药品数量</th>
+            <th>经手人</th>
+            <!-- 其他药品信息列 -->
+            <th>操作</th>
+        </tr>
+        <tr v-for="drug in paginatedDrugs">
+            <td>{{ drug.drugId }}</td>
+            <td>{{ drug.drugName }}</td>
+            <td>{{ drug.manufacturer }}</td>
+            <td>{{ drug.shelfLife }}</td>
+            <td>{{ drug.drugUsage }}</td>
+            <td>{{ drug.price }}</td>
+            <td>{{ drug.quantity }}</td>
+            <td>{{ drug.handler }}</td>
+            <!-- 其他药品信息列 -->
+            <td>
+                <button @click="deleteDrug(drug.drugId)">删除</button>
+                <button @click="showEditForm(drug)">修改</button>
+            </td>
+        </tr>
+        <tr v-if="drugs.code === 0">
+            <td colspan="4">{{ drugs.msg }}</td>
+        </tr>
+        <tr v-if="drugs.data.length === 0 && drugs.code === 1">
+            <td colspan="4" style="display: flex;justify-content: center;color: red;">暂无药品信息</td>
+        </tr>
+    </table>
+    <!-- 分页按钮 -->
+    <div>
+        <button v-for="page in pageCount" :key="page" @click="goToPage(page)">
+            {{ page }}
+        </button>
+    </div>
+
+    <!-- 修改药品表单 -->
+    <div v-if="showEdit">
+        <h2>修改药品信息</h2>
+        <form @submit.prevent="updateDrug">
+            <label>药品编号:</label>
+            <input type="text" v-model="editDrug.drugId" readonly><br>
+
+            <label>药品名称:</label>
+            <input type="text" v-model="editDrug.drugName"><br>
+
+            <label>生产厂家:</label>
+            <input type="text" v-model="editDrug.manufacturer"><br>
+
+            <label>保质期:</label>
+            <input type="text" v-model="editDrug.shelfLife"><br>
+
+            <label>药品用途:</label>
+            <input type="text" v-model="editDrug.drugUsage"><br>
+
+            <label>药品价格:</label>
+            <input type="text" v-model="editDrug.price"><br>
+
+            <label>药品数量:</label>
+            <input type="text" v-model="editDrug.quantity"><br>
+
+            <label>经手人:</label>
+            <input type="text" v-model="editDrug.handler"><br>
+
+
+            <!-- 其他药品信息输入框 -->
+            <button type="submit">确认修改</button>
+            <button @click="cancelEdit">取消</button>
+
+        </form>
+    </div>
+
+
+    <!-- 增加药品表单 -->
+    <div v-if="showAdd">
+        <h2>新增药品信息</h2>
+        <form @submit.prevent="addDrug">
+            <label>药品名称:</label>
+            <input type="text" v-model="newDrug.drugName" required><br>
+
+            <label>制造厂商:</label>
+            <input type="text" v-model="newDrug.manufacturer" required><br>
+
+            <label>保质期&nbsp;&nbsp;&nbsp;&nbsp;:</label>
+            <input type="text" v-model="newDrug.shelfLife" required><br>
+
+            <label>药品用途:</label>
+            <input type="text" v-model="newDrug.drugUsage" required><br>
+
+            <label>药品价格:</label>
+            <input type="text" v-model="newDrug.price" required><br>
+
+            <label>药品数量:</label>
+            <input type="text" v-model="newDrug.quantity" required><br>
+
+            <label>经手人&nbsp;&nbsp;&nbsp;&nbsp;:</label>
+            <input type="text" v-model="newDrug.handler" required><br>
+
+            <button type="submit">确认添加</button>
+            <button @click="cancelAdd">取消</button>
+
+        </form>
+    </div>
+
+    <!-- 提示信息 -->
+    <!-- 如果 successMessage 的值为真（非空、非零、非假值）则显示-->
+    <div v-if="successMessage" class="success-message">
+        {{ successMessage }}
+    </div>
+</div>
+
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            successMessage: '',
+            drugs: {
+                code: null,
+                msg: '',
+                data: []
+            },
+            searchDrugName: '',
+            //前端分页
+            currentPage: 1,
+            pageSize: 5,
+
+            //编辑
+            showEdit: false,
+            editDrug: {
+                drugId: null,
+                drugName: '',
+                manufacturer: '',
+                shelfLife: '',
+                drugUsage: '',
+                price: 0.0,
+                quantity: 0,
+                handler: ''
+
+            },
+            //增加
+            showAdd: false,
+            newDrug: {
+                drugName: '',
+                manufacturer: '',
+                shelfLife: '',
+                drugUsage: '',
+                price: '',
+                quantity: '',
+                handler: ''
+            }
+        },
+        computed: {
+            //分页
+            paginatedDrugs() {
+                const startIndex = (this.currentPage - 1) * this.pageSize;
+                const endIndex = startIndex + this.pageSize;
+                return this.drugs.data.slice(startIndex, endIndex);
+            },
+            pageCount() {
+                return Math.ceil(this.drugs.data.length / this.pageSize);
+            }
+        },
+        methods: {
+            goToPage(page) {
+                this.currentPage = page;
+            },
+            getDrugInfo() {
+                axios.get('/api/drugs')
+                    .then(response => {
+                        this.drugs.code = response.data.code;
+                        if (response.data.code === 1) {
+
+                            this.drugs.data = JSON.parse(response.data.data);
+                        } else {
+                            this.drugs.msg = response.data.msg;
+                        }
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            },
+            deleteDrug(drugId) {
+                if (confirm('确认要删除此入库信息吗？')) {
+                    axios.delete(`/api/drugs/${drugId}`)
+                        .then(() => {
+                            this.getDrugInfo();
+                        })
+                        .catch(error => {
+                            console.error(error);
+                        });
+                }
+            },
+            showEditForm(drug) {
+                this.showEdit = true;
+                this.editDrug = {...drug};//浅拷贝
+            },
+            updateDrug() {
+                axios.put(`/api/drugs/${this.editDrug.drugId}`, this.editDrug)
+                    .then(() => {
+                        this.showEdit = false;
+                        this.getDrugInfo();
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            }, cancelEdit() {
+                this.showEdit = false; // 关闭编辑状态
+                // 可选：重置编辑员工数据，以便下次编辑时不保留上次的修改
+                this.editEmployee = {
+                    drugName: '',
+                    manufacturer: '',
+                    shelfLife: '',
+                    drugUsage: '',
+                    price: '',
+                    quantity: '',
+                    handler: ''
+                };
+            },
+
+
+            showAddForm() {
+                this.showAdd = true;
+                // 清空表单数据
+                this.newDrug = {
+                    drugName: '',
+                    manufacturer: '',
+                    shelfLife: '',
+                    drugUsage: '',
+                    price: '',
+                    quantity: '',
+                    handler: ''
+                };
+            },
+
+            addDrug() {
+                // 发送 POST 请求以添加新的药品信息
+                axios.post('/api/drugs', this.newDrug)
+                    .then(() => {
+                        this.successMessage = '药品信息已成功添加！';
+                        // 自动关闭成功提示
+                        setTimeout(() => {
+                            this.successMessage = '';
+                        }, 3000); // 3秒后自动关闭提示
+                        this.getDrugInfo(); // 刷新数据
+                        this.showAdd = false;
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+
+            }, cancelAdd() {
+                this.showAdd = false; // 关闭编辑状态
+                // 可选：重置编辑员工数据，以便下次编辑时不保留上次的修改
+                this.editEmployee = {
+                    employeeId: null,
+                    name: '',
+                    gender: '',
+                    age: '',
+                    education: '',
+                    position: ''
+                };
+            },
+            searchDrug() {
+                if (this.searchDrugName.trim() !== '') {
+                    axios.get(`/api/drugs/${this.searchDrugName}`)
+                        .then(response => {
+                            this.drugs.code = response.data.code;
+                            if (response.data.code === 1) {
+                                this.drugs.data = JSON.parse(response.data.data);
+                            } else {
+                                this.drugs.msg = response.data.msg;
+                            }
+                        })
+                        .catch(error => {
+                            console.error(error);
+                        });
+                } else {
+                    alert('请输入药品名称');
+                }
+            }
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yikousu.mapper.DrugMapper"><!--  写对应mapper的路径-->
+
+
+    <select id="searchDrugByName" resultType="com.yikousu.pojo.Drug">
+        select * from druginformation where drugName like concat('%',#{drigName},'%');
+    </select>
+</mapper>

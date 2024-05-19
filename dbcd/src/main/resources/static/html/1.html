@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <!-- 引入Vue.js和Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+<div id="app">
+    <form @submit.prevent="postData">
+        <input type="text" v-model="dataToPost" placeholder="Enter data">
+        <button type="submit">Submit</button>
+    </form>
+</div>
+
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            dataToPost: ''
+        },
+        methods: {
+            postData() {
+                // 发送POST请求到后端
+                axios.post('/your-backend-endpoint', {data: this.dataToPost})
+                    .then(response => {
+                        // 处理成功响应
+                        console.log(response.data);
+                    })
+                    .catch(error => {
+                        // 处理错误
+                        console.error(error);
+                    });
+            }
+        }
+    });
+</script>
+</body>
+</html>

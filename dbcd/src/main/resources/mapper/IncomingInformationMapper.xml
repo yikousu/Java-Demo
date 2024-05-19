@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yikousu.mapper.IncomingInformationMapper"><!--  写对应mapper的路径-->
+
+    <resultMap id="residuleByIdMap" type="com.yikousu.pojo.Drug">
+        <id property="drugName" column="drugName"/>
+        <result property="quantity" column="剩余量"/>
+    </resultMap>
+    <!--
+    1. 查询出来的相当于一个新表
+    2. 查询结果映射到pojo实体类用ResultMap
+    3. ResultMap中字段映射注意 column是新查出来的新表
+    4. 假设Drug的quantity属性为库存量 因为要返回两个属性 所以封装给Drug
+    -->
+
+    <!-- 使用了 COALESCE 函数来处理数量字段。如果子查询返回的数量为空，则将其替换为 0
+         COALESCE第二个参数是把null换成数字几？
+    -->
+
+    <select id="residuleById" resultMap="residuleByIdMap">
+        SELECT d.drugName,
+               COALESCE((SELECT SUM(i.incomingQuantity) FROM incominginformation i WHERE i.drugId = #{id}), 0) -
+               COALESCE((SELECT SUM(o.outgoingQuantity) FROM outgoinginformation o WHERE o.drugId = #{id}), 0) AS "剩余量"
+        FROM druginformation d
+        WHERE d.drugId = #{id};
+    </select>
+</mapper>

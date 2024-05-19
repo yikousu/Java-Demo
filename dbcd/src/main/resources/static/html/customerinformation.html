@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <!--  customerinformation.html-->
+    <title>客户购买信息管理系统</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- css文件 -->
+    <link rel="stylesheet" type="text/css" href="../css/1.css">
+
+</head>
+
+<body>
+<div id="app">
+    <h1>客户购买信息管理系统</h1>
+    <button @click="getCustomerInfo">查询客户信息</button>
+    <button @click="showAddForm">增加客户信息</button>
+    <h2>客户购买信息</h2>
+    <table>
+        <tr>
+            <th>客户ID</th>
+            <th>姓名</th>
+            <th>联系信息</th>
+            <th>购买日期</th>
+            <th>购买药品名称</th>
+            <th>购买数量</th>
+            <th>操作</th>
+        </tr>
+        <tr v-for="customer in paginatedCustomers">
+            <td>{{ customer.customerId }}</td>
+            <td>{{ customer.name }}</td>
+            <td>{{ customer.contactInfo }}</td>
+            <td>{{new Date(customer.purchaseDate).toLocaleDateString() }}</td>
+            <td>{{ customer.purchaseDrugName }}</td>
+            <td>{{ customer.purchaseQuantity }}</td>
+            <td>
+                <button @click="deleteCustomer(customer.customerId)">删除</button>
+                <button @click="showEditForm(customer)">修改</button>
+            </td>
+        </tr>
+        <tr v-if="customers.code === 0">
+            <td colspan="8">{{ customers.msg }}</td>
+        </tr>
+        <tr v-if="customers.data.length === 0 && customers.code === 1">
+            <td colspan="8">暂无客户购买信息</td>
+        </tr>
+    </table>
+    <!-- 分页按钮 -->
+    <div>
+        <button v-for="page in pageCount" :key="page" @click="goToPage(page)">
+            {{ page }}
+        </button>
+    </div>
+
+    <!-- 修改客户表单 -->
+    <div v-if="showEdit">
+        <h2>修改客户购买信息</h2>
+        <form @submit.prevent="updateCustomer">
+            <label>客户ID:</label>
+            <input type="text" v-model="editCustomer.customerId" readonly><br>
+
+            <label>姓名:</label>
+            <input type="text" v-model="editCustomer.name"><br>
+
+            <label>联系信息:</label>
+            <input type="text" v-model="editCustomer.contactInfo"><br>
+
+            <label>购买药品ID:</label>
+            <input type="text" v-model="editCustomer.purchaseDrugId"><br>
+
+            <label>购买药品名称:</label>
+            <input type="text" v-model="editCustomer.purchaseDrugName"><br>
+
+            <label>购买数量:</label>
+            <input type="text" v-model="editCustomer.purchaseQuantity"><br>
+            <br>
+
+            <button type="submit">确认修改</button>
+            <button @click="cancelEdit">取消</button>
+        </form>
+    </div>
+
+
+    <!-- 增加客户表单 -->
+    <div v-if="showAdd">
+        <h2>新增客户购买信息</h2>
+        <form @submit.prevent="addCustomer">
+            <label>姓&nbsp;&nbsp;名 &nbsp;&nbsp;&nbsp;&nbsp;:</label>
+            <input type="text" v-model="newCustomer.name" required><br>
+
+            <label>联系信息:</label>
+            <input type="text" v-model="newCustomer.contactInfo" required><br>
+            <label>药品ID:&nbsp;&nbsp;&nbsp;</label>
+            <input type="text" v-model="newCustomer.purchaseDrugId" required><br>
+
+            <label>药品名称:</label>
+            <input type="text" v-model="newCustomer.purchaseDrugName" required><br>
+
+            <label>数&nbsp;&nbsp;量 &nbsp;&nbsp;&nbsp;&nbsp;:</label>
+            <input type="text" v-model="newCustomer.purchaseQuantity" required><br>
+            <br>
+
+            <button type="submit">确认添加</button>
+            <button @click="cancelAdd">取消</button>
+        </form>
+    </div>
+
+    <!-- 提示信息 -->
+    <div v-if="successMessage" class="success-message">
+        {{ successMessage }}
+    </div>
+</div>
+
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            successMessage: '',
+            customers: {
+                code: null,
+                msg: '',
+                data: []
+            },
+            currentPage: 1,
+            pageSize: 5,
+            showEdit: false,
+            editCustomer: {
+                customerId: null,
+                name: '',
+                contactInfo: '',
+                purchaseDrugId: '',
+                purchaseDrugName: '',
+                purchaseQuantity: ''
+            },
+            showAdd: false,
+            newCustomer: {
+                name: '',
+                contactInfo: '',
+                purchaseDrugId: '',
+                purchaseDrugName: '',
+                purchaseQuantity: ''
+            }
+        },
+        computed: {
+            paginatedCustomers() {
+                const startIndex = (this.currentPage - 1) * this.pageSize;
+                const endIndex = startIndex + this.pageSize;
+                return this.customers.data.slice(startIndex, endIndex);
+            },
+            pageCount() {
+                return Math.ceil(this.customers.data.length / this.pageSize);
+            }
+        },
+        methods: {
+            goToPage(page) {
+                this.currentPage = page;
+            },
+            getCustomerInfo() {
+                axios.get('/api/customerinformation')
+                    .then(response => {
+                        this.customers.code = response.data.code;
+                        if (response.data.code === 1) {
+                            this.customers.data = JSON.parse(response.data.data);
+                        } else {
+                            this.customers.msg = response.data.msg;
+                        }
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            },
+            deleteCustomer(customerId) {
+                if (confirm('确认要删除此客户购买信息吗？')) {
+                    axios.delete(`/api/customerinformation/${customerId}`)
+                        .then(() => {
+                            this.getCustomerInfo();
+                        })
+                        .catch(error => {
+                            console.error(error);
+                        });
+                }
+            },
+            showEditForm(customer) {
+                this.showEdit = true;
+                this.editCustomer = {...customer};
+            },
+            updateCustomer() {
+                axios.put(`/api/customerinformation/${this.editCustomer.customerId}`, this.editCustomer)
+                    .then(() => {
+                        this.showEdit = false;
+                        this.getCustomerInfo();
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            }, cancelEdit() {
+                this.showEdit = false; // 关闭编辑状态
+                // 可选：重置编辑员工数据，以便下次编辑时不保留上次的修改
+                this.editEmployee = {
+                    customerId: null,
+                    name: '',
+                    contactInfo: '',
+                    purchaseDrugId: '',
+                    purchaseDrugName: '',
+                    purchaseQuantity: ''
+                };
+            },
+
+            showAddForm() {
+                this.showAdd = true;
+                this.newCustomer = {
+                    name: '',
+                    contactInfo: '',
+                    purchaseDate: '',
+                    purchaseDrugId: '',
+                    purchaseDrugName: '',
+                    purchaseQuantity: ''
+                };
+            },
+            cancelAdd() {
+                this.showAdd = false; // 关闭编辑状态
+                // 可选：重置编辑员工数据，以便下次编辑时不保留上次的修改
+                this.editEmployee = {
+                    name: '',
+                    contactInfo: '',
+                    purchaseDate: '',
+                    purchaseDrugId: '',
+                    purchaseDrugName: '',
+                    purchaseQuantity: ''
+                };
+            },
+            addCustomer() {
+                axios.post('/api/customerinformation', this.newCustomer)
+                    .then(() => {
+                        this.successMessage = '客户购买信息已成功添加！';
+                        setTimeout(() => {
+                            this.successMessage = '';
+                        }, 3000);
+                        this.getCustomerInfo();
+                        this.showAdd = false;
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            }
+        }
+    });
+</script>
+</body>
+
+</html>

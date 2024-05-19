@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <!--incominginformation.html-->
+    <title>进货信息管理</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- css文件 -->
+    <link rel="stylesheet" type="text/css" href="../css/1.css">
+
+</head>
+
+<body>
+<div id="app">
+    <h1>进库管理系统</h1>
+    <button @click="getIncomingInfo">查询入库信息</button>
+    <button @click="showAddForm">新增入库信息</button>
+
+    <input type="text" id="residueId" v-model="residueId" required placeholder="输入药品id查询库存">
+    <button @click="submitData">提交</button>
+    <label v-if="showError" style="color: red;">请输入数据</label>
+    <label v-if="showResidue">{{residueResult.data.drugName}}剩余量:{{residueResult.data.quantity}}</label>
+    <label v-if="residuleNoIdShow" style="color:red;">暂无此药品</label>
+
+    <h2>入库信息</h2>
+    <table>
+        <tr>
+            <th>入库编号</th>
+            <th>药品编号</th>
+            <th>入库日期</th>
+            <th>入库数量</th>
+            <th>存储位置</th>
+            <th>操作</th>
+        </tr>
+        <tr v-for="incoming in paginatedIncoming">
+            <td>{{ incoming.incomingId }}</td>
+            <td>{{ incoming.drugId }}</td>
+            <td>{{new Date(incoming.incomingDate).toLocaleDateString() }}</td>
+            <td>{{ incoming.incomingQuantity }}</td>
+            <td>{{ incoming.storageLocation }}</td>
+            <td>
+                <button @click="deleteIncoming(incoming.incomingId)">删除</button>
+                <button @click="showEditForm(incoming)">修改</button>
+            </td>
+        </tr>
+        <tr v-if="incomingInfo.code === 0">
+            <td colspan="6">{{ incomingInfo.msg }}</td>
+        </tr>
+        <tr v-if="incomingInfo.data.length === 0 && incomingInfo.code === 1">
+            <td colspan="6">暂无入库信息</td>
+        </tr>
+    </table>
+    <!-- 分页按钮 -->
+    <div>
+        <button v-for="page in pageCount" :key="page" @click="goToPage(page)">
+            {{ page }}
+        </button>
+    </div>
+
+    <!-- 修改入库表单 -->
+    <div v-if="showEdit">
+        <h2>修改入库信息</h2>
+        <form @submit.prevent="updateIncoming">
+            <label>入库编号:</label>
+            <input type="text" v-model="editIncoming.incomingId" readonly><br>
+
+            <label>药品编号:</label>
+            <input type="text" v-model="editIncoming.drugId"><br>
+
+            <label>入库数量:</label>
+            <input type="text" v-model="editIncoming.incomingQuantity"><br>
+
+            <label>存储位置:</label>
+            <input type="text" v-model="editIncoming.storageLocation"><br>
+            <br>
+            <button type="submit">确认修改</button>
+            <button @click="cancelEdit">取消</button>
+
+        </form>
+    </div>
+
+
+    <!-- 新增入库表单 -->
+    <div v-if="showAdd">
+        <h2>新增入库信息</h2>
+        <form @submit.prevent="addIncoming">
+            <label>药品编号:</label>
+            <input type="text" v-model="newIncoming.drugId" required><br>
+
+
+            <label>入库数量:</label>
+            <input type="text" v-model="newIncoming.incomingQuantity" required><br>
+
+            <label>存储位置:</label>
+            <input type="text" v-model="newIncoming.storageLocation" required><br>
+            <br>
+            <button type="submit">确认添加</button>
+            <button @click="cancelAdd">取消</button>
+
+        </form>
+    </div>
+
+    <!-- 提示信息 -->
+    <div v-if="successMessage" class="success-message">
+        {{ successMessage }}
+    </div>
+</div>
+
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            successMessage: '',
+            incomingInfo: {
+                code: null,
+                msg: '',
+                data: []
+            },
+            currentPage: 1,
+            pageSize: 5,
+            showEdit: false,
+            editIncoming: {
+                incomingId: null,
+                drugId: '',
+                incomingQuantity: '',
+                storageLocation: ''
+            },
+            showAdd: false,
+            newIncoming: {
+                drugId: '',
+                incomingQuantity: '',
+                storageLocation: ''
+            },
+            // 也可以用[] 接受
+            residueResult: {
+                code: null,
+                msg: '',
+                data: []
+            },
+            residueId: '',
+            showResidue: false,
+            showError: false,
+            residuleNoIdShow: false
+        },
+        computed: {
+            paginatedIncoming() {
+                const startIndex = (this.currentPage - 1) * this.pageSize;
+                const endIndex = startIndex + this.pageSize;
+                return this.incomingInfo.data.slice(startIndex, endIndex);
+            },
+            pageCount() {
+                return Math.ceil(this.incomingInfo.data.length / this.pageSize);
+            }
+        },
+        methods: {
+            goToPage(page) {
+                this.currentPage = page;
+            },
+            getIncomingInfo() {
+                this.showResidue = false;
+                axios.get('/api/incominginformation')
+                    .then(response => {
+                        this.incomingInfo.code = response.data.code;
+                        if (response.data.code === 1) {
+                            this.incomingInfo.data = JSON.parse(response.data.data);
+                        } else {
+                            this.incomingInfo.msg = response.data.msg;
+                        }
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            },
+            deleteIncoming(incomingId) {
+                this.showResidue = false;
+                if (confirm('确认要删除此入库信息吗？')) {
+                    axios.delete(`/api/incominginformation/${incomingId}`)
+                        .then(() => {
+                            this.getIncomingInfo();
+                        })
+                        .catch(error => {
+                            console.error(error);
+                        });
+                }
+            },
+            showEditForm(incoming) {
+                this.showEdit = true;
+                this.editIncoming = {...incoming};
+            },
+            updateIncoming() {
+                this.showResidue = false;
+                //this.editIncoming 包含要发送到服务器的更新数据
+                axios.put(`/api/incominginformation/${this.editIncoming.incomingId}`, this.editIncoming)
+                    .then(() => {
+                        this.showEdit = false;
+                        this.getIncomingInfo();
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            },
+            cancelEdit() {
+                this.showEdit = false;
+                this.editIncoming = {
+                    incomingId: null,
+                    drugId: '',
+                    incomingDate: '',
+                    incomingQuantity: '',
+                    storageLocation: ''
+                };
+            },
+            showAddForm() {
+                this.showAdd = true;
+                this.newIncoming = {
+                    drugId: '',
+                    incomingDate: '',
+                    incomingQuantity: '',
+                    storageLocation: ''
+                };
+            },
+            addIncoming() {
+                axios.post('/api/incominginformation', this.newIncoming)
+                    .then(() => {
+                        this.successMessage = '入库信息已成功添加！';
+                        setTimeout(() => {
+                            this.successMessage = '';
+                        }, 3000);
+                        this.getIncomingInfo();
+                        this.showAdd = false;
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            },
+            cancelAdd() {
+                this.showAdd = false;
+                this.newIncoming = {
+                    drugId: '',
+                    incomingDate: '',
+                    incomingQuantity: '',
+                    storageLocation: ''
+                };
+            },
+            submitData() {
+                if (this.residueId === '') {
+                    this.residuleNoIdShow = false;
+                    this.showError = true;
+                    setTimeout(() => {
+                        this.showError = false
+                    }, 3000);
+                } else {
+                    this.showError = false;
+                    var url = '/api/incominginformation/residuleById/' + this.residueId;
+                    axios.get(url)
+                        .then(response => {
+                            this.residueResult.code = response.data.code;
+                            if (this.residueResult.code === 1) {
+                                this.residuleNoIdShow = false;
+                                this.showResidue = true;
+                                this.residueResult.data = JSON.parse(response.data.data);
+                            } else if ((this.residueResult.code === 0)) {
+                                //输入的id无对应药品
+                                this.showResidue = false;
+                                this.residuleNoIdShow = true;
+                                this.residueResult.msg = response.data.msg;
+                                // setTimeout 全局函数 用于设置一个定时器 时间一到 就执行代码
+                                setTimeout(() => {
+                                    this.residuleNoIdShow = false;
+                                }, 3000)
+                            }
+
+                        })
+                        .catch(error => {
+                            console.error(error);
+                        });
+                }
+            }
+        }
+    });
+</script>
+</body>
+
+</html>

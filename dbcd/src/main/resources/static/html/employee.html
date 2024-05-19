@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <!-- employee.html-->
+    <title>员工信息管理系统</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- css文件 -->
+    <link rel="stylesheet" type="text/css" href="../css/1.css">
+
+</head>
+
+<body>
+<div id="app">
+    <h1>员工信息管理系统</h1>
+    <button @click="getEmployeeInfo">查询员工信息</button>
+    <button @click="showAddForm">增加员工信息</button>
+    <h2>员工信息</h2>
+    <table>
+        <tr>
+            <th>员工编号</th>
+            <th>姓名</th>
+            <th>性别</th>
+            <th>年龄</th>
+            <th>学历</th>
+            <th>职位</th>
+            <th>操作</th>
+        </tr>
+        <tr v-for="employee in paginatedEmployees">
+            <td>{{ employee.employeeId }}</td>
+            <td>{{ employee.name }}</td>
+            <td>{{ employee.gender }}</td>
+            <td>{{ employee.age }}</td>
+            <td>{{ employee.education }}</td>
+            <td>{{ employee.position }}</td>
+            <td>
+                <button @click="deleteEmployee(employee.employeeId)">删除</button>
+                <button @click="showEditForm(employee)">修改</button>
+            </td>
+        </tr>
+        <tr v-if="employees.code === 0">
+            <td colspan="7">{{ employees.msg }}</td>
+        </tr>
+        <tr v-if="employees.data.length === 0 && employees.code === 1">
+            <td colspan="7">暂无员工信息</td>
+        </tr>
+    </table>
+    <!-- 分页按钮 -->
+    <div>
+        <button v-for="page in pageCount" :key="page" @click="goToPage(page)">
+            {{ page }}
+        </button>
+    </div>
+
+    <!-- 修改员工表单 -->
+    <div v-if="showEdit">
+        <h2>修改员工信息</h2>
+        <form @submit.prevent="updateEmployee">
+            <label>编号:</label>
+            <input type="text" v-model="editEmployee.employeeId" readonly><br>
+
+            <label>姓名:</label>
+            <input type="text" v-model="editEmployee.name"><br>
+
+            <label>性别:</label>
+            <input type="text" v-model="editEmployee.gender"><br>
+
+            <label>年龄:</label>
+            <input type="text" v-model="editEmployee.age"><br>
+
+            <label>学历:</label>
+            <input type="text" v-model="editEmployee.education"><br>
+
+            <label>职位:</label>
+            <input type="text" v-model="editEmployee.position"><br>
+            <br>
+            <button type="submit">确认修改</button>
+            <button @click="cancelEdit">取消</button>
+
+        </form>
+    </div>
+
+
+    <!-- 增加员工表单 -->
+    <div v-if="showAdd">
+        <h2>新增员工信息</h2>
+        <form @submit.prevent="addEmployee">
+            <label>姓名:</label>
+            <input type="text" v-model="newEmployee.name" required><br>
+
+            <label>性别:</label>
+            <input type="text" v-model="newEmployee.gender" required><br>
+
+            <label>年龄:</label>
+            <input type="text" v-model="newEmployee.age" required><br>
+
+            <label>学历:</label>
+            <input type="text" v-model="newEmployee.education" required><br>
+
+            <label>职位:</label>
+            <input type="text" v-model="newEmployee.position" required><br>
+            <br>
+            <button type="submit">确认添加</button>
+            <button @click="cancelAdd">取消</button>
+
+        </form>
+    </div>
+
+    <!-- 提示信息 -->
+    <div v-if="successMessage" class="success-message">
+        {{ successMessage }}
+    </div>
+</div>
+
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            successMessage: '',
+            employees: {
+                code: null,
+                msg: '',
+                data: []
+            },
+            currentPage: 1,
+            pageSize: 5,
+            showEdit: false,
+            editEmployee: {
+                employeeId: null,
+                name: '',
+                gender: '',
+                age: '',
+                education: '',
+                position: ''
+            },
+            showAdd: false,
+            newEmployee: {
+                name: '',
+                gender: '',
+                age: '',
+                education: '',
+                position: ''
+            }
+        },
+        computed: {
+            paginatedEmployees() {
+                const startIndex = (this.currentPage - 1) * this.pageSize;
+                const endIndex = startIndex + this.pageSize;
+                return this.employees.data.slice(startIndex, endIndex);
+            },
+            pageCount() {
+                return Math.ceil(this.employees.data.length / this.pageSize);
+            }
+        },
+        methods: {
+            goToPage(page) {
+                this.currentPage = page;
+            },
+            getEmployeeInfo() {
+                axios.get('/api/employee')
+                    .then(response => {
+                        this.employees.code = response.data.code;
+                        if (response.data.code === 1) {
+                            this.employees.data = JSON.parse(response.data.data);
+                        } else {
+                            this.employees.msg = response.data.msg;
+                        }
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            },
+            deleteEmployee(employeeId) {
+                // 提示用户确认删除操作
+                if (confirm('确认要删除此员工信息吗？')) {
+                    axios.delete(`/api/employee/${employeeId}`)
+                        .then(() => {
+                            this.getEmployeeInfo();
+                        })
+                        .catch(error => {
+                            console.error(error);
+                        });
+                }
+            },
+            showEditForm(employee) {
+                this.showEdit = true;
+                this.editEmployee = {...employee};
+            },
+            updateEmployee() {
+                axios.put(`/api/employee/${this.editEmployee.employeeId}`, this.editEmployee)
+                    .then(() => {
+                        this.showEdit = false;
+                        this.getEmployeeInfo();
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            },
+            cancelEdit() {
+                this.showEdit = false; // 关闭编辑状态
+                // 可选：重置编辑员工数据，以便下次编辑时不保留上次的修改
+                this.editEmployee = {
+                    employeeId: null,
+                    name: '',
+                    gender: '',
+                    age: '',
+                    education: '',
+                    position: ''
+                };
+            },
+            showAddForm() {
+                this.showAdd = true;
+                this.newEmployee = {
+                    name: '',
+                    gender: '',
+                    age: '',
+                    education: '',
+                    position: ''
+                };
+            },
+            addEmployee() {
+                axios.post('/api/employee', this.newEmployee)
+                    .then(() => {
+                        this.successMessage = '员工信息已成功添加！';
+                        setTimeout(() => {
+                            this.successMessage = '';
+                        }, 3000);
+                        this.getEmployeeInfo();
+                        this.showAdd = false;
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            },
+            cancelAdd() {
+                this.showAdd = false; // 关闭编辑状态
+                // 可选：重置编辑员工数据，以便下次编辑时不保留上次的修改
+                this.editEmployee = {
+                    employeeId: null,
+                    name: '',
+                    gender: '',
+                    age: '',
+                    education: '',
+                    position: ''
+                };
+            },
+        }
+    });
+</script>
+</body>
+
+</html>
